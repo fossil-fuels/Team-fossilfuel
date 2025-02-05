@@ -19,61 +19,81 @@ public class MemberController {
     private final MemberService memberService;
     private final MailService registerMail;
 
-    // 인증 코드를 생성하고 세션에 저장하는 컨트롤러 예제
+
+
+    // 인증 코드 전송
     @PostMapping("/api/send-verification-code")
-    public ResponseEntity<String> sendVerificationCode(HttpSession session, @RequestParam(name = "email") String email) throws Exception {
-
-
-        String verificationCode = registerMail.sendSimpleMessage(email); // 인증 코드 생성 로직
+    public ResponseEntity<Map<String, Object>> sendVerificationCode(HttpSession session, @RequestBody Map<String, String> request) throws Exception {
+        String email = request.get("email");
+        String verificationCode = registerMail.sendSimpleMessage(email);
         session.setAttribute("verificationCode", verificationCode);
-        System.out.println("사용자에게 발송한 인증코드 ==> " + verificationCode);
 
-        // 이메일 발송 로직 (생략)
-        return ResponseEntity.ok("인증 코드가 이메일로 발송되었습니다.");
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "인증 코드가 이메일로 발송되었습니다.");
+        return ResponseEntity.ok(response);
     }
 
-    // 인증 코드를 확인하는(1차) 컨트롤러 예제
+    // 인증 코드 확인
     @PostMapping("/api/verify-code")
-    public ResponseEntity<String> verifyCode(HttpSession session, @RequestParam String code) {
+    public ResponseEntity<Map<String, Object>> verifyCode(HttpSession session, @RequestBody Map<String, String> request) {
+        String code = request.get("code");
         String verificationCode = (String) session.getAttribute("verificationCode");
+        Map<String, Object> response = new HashMap<>();
 
         if (verificationCode != null && verificationCode.equals(code)) {
             session.setAttribute("emailVerified", true);
-            return ResponseEntity.ok("이메일 인증 성공!");
+            response.put("success", true);
+            response.put("message", "이메일 인증 성공!");
+            return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("인증 코드가 일치하지 않습니다.");
+            response.put("success", false);
+            response.put("message", "인증 코드가 일치하지 않습니다.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
 
-    // ======= sign up 과정 중에 진행되는 ========
+    // 이메일 중복 확인
+    @PostMapping("/api/check-email")
+    public ResponseEntity<Map<String, Object>> checkEmailDuplicate(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        Map<String, Object> response = new HashMap<>();
 
-    // 이메일 중복 체크 API
-    @GetMapping("/api/members/check-email")
-    public ResponseEntity<String> checkEmailDuplicate(@RequestParam String email) {
         if (memberService.isEmailDuplicate(email)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("이미 가입된 이메일입니다.");
+            response.put("success", false);
+            response.put("message", "이미 가입된 이메일입니다.");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
-        return ResponseEntity.ok("사용 가능한 이메일입니다.");
+
+        response.put("success", true);
+        response.put("message", "사용 가능한 이메일입니다.");
+        return ResponseEntity.ok(response);
     }
 
-
-    // 세션에 저장된 이메일과 2차 비교
+    // 이메일 인증 여부 확인
     @GetMapping("/api/email-last-verified")
-    public ResponseEntity<Boolean> checkEmailVerified(HttpSession session) {
+    public ResponseEntity<Map<String, Object>> checkEmailVerified(HttpSession session) {
         Boolean emailVerified = (Boolean) session.getAttribute("emailVerified");
-        if (emailVerified != null && emailVerified) {
-            return ResponseEntity.ok(true);
+        Map<String, Object> response = new HashMap<>();
+
+        if (Boolean.TRUE.equals(emailVerified)) {
+            response.put("success", true);
+            return ResponseEntity.ok(response);
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(false);
+            response.put("success", false);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
 
 
-    // 회원 등록
-    @PostMapping("/api/members/register")
-    public ResponseEntity<?> saveMember(@RequestBody RegisterRequest registerRequest) {
-        memberService.saveMember(registerRequest);  // 회원 저장
-        return new ResponseEntity<>(HttpStatus.OK);  // 200 OK만 반환
+    // 회원가입
+    @PostMapping("api/members/register")
+    public ResponseEntity<Map<String, Object>> saveMember(@RequestBody RegisterRequest registerRequest) {
+        memberService.saveMember(registerRequest);
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "회원가입 성공!");
+        return ResponseEntity.ok(response);
     }
 
 

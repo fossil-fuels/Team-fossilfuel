@@ -9,15 +9,17 @@ document.getElementById('send-code').addEventListener('click', async function() 
     try {
         const response = await fetch('/api/send-verification-code', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ email })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
         });
 
-        if (response.ok) {
+        const data = await response.json();
+
+        if (data.success) {
             alert("인증 코드가 이메일로 전송되었습니다.");
+            document.getElementById('email').disabled = true; // 이메일 필드 수정 불가능하게 설정
         } else {
-            const errorText = await response.text();
-            alert("인증 코드 전송 실패: " + errorText);
+            alert("인증 코드 전송 실패: " + (data.message || "알 수 없는 오류"));
         }
     } catch (error) {
         console.error("인증 코드 전송 오류: ", error);
@@ -36,24 +38,22 @@ document.getElementById('verify-code').addEventListener('click', async function 
     try {
         const response = await fetch('/api/verify-code', {
             method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: new URLSearchParams({code})
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
         });
 
-        if (response.ok) {
+        const data = await response.json();
+
+        if (data.success) {
             alert("이메일 인증 성공!");
-            // 이메일 인증이 완료되면 이메일 필드를 disabled로 설정
-            document.getElementById('email').disabled = true; // 이메일 필드를 수정 불가능하게 만듦
         } else {
-            const errorText = await response.text();
-            alert("이메일 인증 실패: " + errorText);
+            alert("이메일 인증 실패: " + (data.message || "잘못된 코드입니다."));
         }
     } catch (error) {
         console.error("인증 코드 확인 오류: ", error);
         alert("인증 코드 확인 중 문제가 발생했습니다.");
     }
 });
-
 
 document.getElementById('signup').addEventListener('click', async function() {
     const nickname = document.getElementById('nickname').value;
@@ -79,18 +79,28 @@ document.getElementById('signup').addEventListener('click', async function() {
 
     try {
         // 이메일 중복 체크 요청
-        const emailCheckResponse = await fetch(`/api/members/check-email?email=${email}`, { method: 'GET' });
+        const emailCheckResponse = await fetch('/api/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
 
-        if (!emailCheckResponse.ok) {
-            const errorText = await emailCheckResponse.text();
-            alert(errorText); // 중복된 이메일 메시지 표시
+        const emailCheckData = await emailCheckResponse.json();
+
+        if (!emailCheckData.success) {
+            alert("이미 사용 중인 이메일입니다.");
             return;
         }
 
-        // 서버에서 이메일 인증 여부 확인
-        const emailVerifyResponse = await fetch('/api/email-last-verified', { method: 'GET' });
+        // 이메일 인증 여부 확인
+        const emailVerifyResponse = await fetch('/api/email-last-verified', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
 
-        if (!emailVerifyResponse.ok) {
+        const emailVerifyData = await emailVerifyResponse.json();
+
+        if (!emailVerifyData.success) {
             alert("이메일 인증을 먼저 완료해주세요.");
             return;
         }
@@ -101,12 +111,13 @@ document.getElementById('signup').addEventListener('click', async function() {
             body: JSON.stringify({ nickname, email, password, grade })
         });
 
-        if (response.ok) {
+        const data = await response.json();
+
+        if (data.success) {
             alert("회원가입 성공!");
             window.location.href = '/login.html'; // 로그인 페이지로 이동
         } else {
-            const errorText = await response.text();
-            alert("회원가입 실패: " + errorText);
+            alert("회원가입 실패: " + (data.message || "알 수 없는 오류"));
         }
     } catch (error) {
         console.error("회원가입 요청 오류: ", error);
