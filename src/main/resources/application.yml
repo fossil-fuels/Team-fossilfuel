@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: fossilfuel
+
+  mail:
+    username: 123
+    password: 123
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  # H2 데이터베이스 설정
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password:
+
+  # H2 콘솔 활성화
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+# Kakao API 설정
+kakao:
+  map:
+    api:
+      key: 123
+
+# OPENAI API 키
+OPENAI_API_KEY: 123
+
+# 로깅 설정
+logging:
+  level:
+    org.springframework.security: DEBUG
+
+# 서버 설정
+server:
+  port: 8080
